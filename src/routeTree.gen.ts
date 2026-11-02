@@ -21,6 +21,10 @@ import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminTasksRouteImport } from './routes/admin.tasks'
 import { Route as AdminTrackingRouteImport } from './routes/admin.tracking'
+import { Route as EmployeeIndexRouteImport } from './routes/employee.index'
+import { Route as EmployeeHistoryRouteImport } from './routes/employee.history'
+import { Route as EmployeeProfileRouteImport } from './routes/employee.profile'
+import { Route as EmployeeTasksRouteImport } from './routes/employee.tasks'
 import { Route as LoginAdminRouteImport } from './routes/login.admin'
 import { Route as LoginEmployeeRouteImport } from './routes/login.employee'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin.customers.index'
@@ -88,6 +92,26 @@ const AdminTrackingRoute = AdminTrackingRouteImport.update({
   path: '/tracking',
   getParentRoute: () => AdminRoute,
 } as any)
+const EmployeeIndexRoute = EmployeeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EmployeeRoute,
+} as any)
+const EmployeeHistoryRoute = EmployeeHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => EmployeeRoute,
+} as any)
+const EmployeeProfileRoute = EmployeeProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => EmployeeRoute,
+} as any)
+const EmployeeTasksRoute = EmployeeTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => EmployeeRoute,
+} as any)
 const LoginAdminRoute = LoginAdminRouteImport.update({
   id: '/login/admin',
   path: '/login/admin',
@@ -124,7 +148,7 @@ const AdminEmployeesEmployeeIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/employee': typeof EmployeeRoute
+  '/employee': typeof EmployeeRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -133,9 +157,13 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/admin/tracking': typeof AdminTrackingRoute
+  '/employee/history': typeof EmployeeHistoryRoute
+  '/employee/profile': typeof EmployeeProfileRoute
+  '/employee/tasks': typeof EmployeeTasksRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/employee': typeof LoginEmployeeRoute
   '/admin/': typeof AdminIndexRoute
+  '/employee/': typeof EmployeeIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
   '/admin/employees/$employeeId': typeof AdminEmployeesEmployeeIdRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
@@ -143,7 +171,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/employee': typeof EmployeeRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -152,9 +179,13 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/admin/tracking': typeof AdminTrackingRoute
+  '/employee/history': typeof EmployeeHistoryRoute
+  '/employee/profile': typeof EmployeeProfileRoute
+  '/employee/tasks': typeof EmployeeTasksRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/employee': typeof LoginEmployeeRoute
   '/admin': typeof AdminIndexRoute
+  '/employee': typeof EmployeeIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
   '/admin/employees/$employeeId': typeof AdminEmployeesEmployeeIdRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
@@ -164,7 +195,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/employee': typeof EmployeeRoute
+  '/employee': typeof EmployeeRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
@@ -173,9 +204,13 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/admin/tracking': typeof AdminTrackingRoute
+  '/employee/history': typeof EmployeeHistoryRoute
+  '/employee/profile': typeof EmployeeProfileRoute
+  '/employee/tasks': typeof EmployeeTasksRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/employee': typeof LoginEmployeeRoute
   '/admin/': typeof AdminIndexRoute
+  '/employee/': typeof EmployeeIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
   '/admin/employees/$employeeId': typeof AdminEmployeesEmployeeIdRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
@@ -195,9 +230,13 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tasks'
     | '/admin/tracking'
+    | '/employee/history'
+    | '/employee/profile'
+    | '/employee/tasks'
     | '/login/admin'
     | '/login/employee'
     | '/admin/'
+    | '/employee/'
     | '/admin/customers/$customerId'
     | '/admin/employees/$employeeId'
     | '/admin/customers/'
@@ -205,7 +244,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/employee'
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
@@ -214,9 +252,13 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tasks'
     | '/admin/tracking'
+    | '/employee/history'
+    | '/employee/profile'
+    | '/employee/tasks'
     | '/login/admin'
     | '/login/employee'
     | '/admin'
+    | '/employee'
     | '/admin/customers/$customerId'
     | '/admin/employees/$employeeId'
     | '/admin/customers'
@@ -234,9 +276,13 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tasks'
     | '/admin/tracking'
+    | '/employee/history'
+    | '/employee/profile'
+    | '/employee/tasks'
     | '/login/admin'
     | '/login/employee'
     | '/admin/'
+    | '/employee/'
     | '/admin/customers/$customerId'
     | '/admin/employees/$employeeId'
     | '/admin/customers/'
@@ -246,7 +292,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  EmployeeRoute: typeof EmployeeRoute
+  EmployeeRoute: typeof EmployeeRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
@@ -340,6 +386,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTrackingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/employee/': {
+      id: '/employee/'
+      path: '/'
+      fullPath: '/employee/'
+      preLoaderRoute: typeof EmployeeIndexRouteImport
+      parentRoute: typeof EmployeeRoute
+    }
+    '/employee/history': {
+      id: '/employee/history'
+      path: '/history'
+      fullPath: '/employee/history'
+      preLoaderRoute: typeof EmployeeHistoryRouteImport
+      parentRoute: typeof EmployeeRoute
+    }
+    '/employee/profile': {
+      id: '/employee/profile'
+      path: '/profile'
+      fullPath: '/employee/profile'
+      preLoaderRoute: typeof EmployeeProfileRouteImport
+      parentRoute: typeof EmployeeRoute
+    }
+    '/employee/tasks': {
+      id: '/employee/tasks'
+      path: '/tasks'
+      fullPath: '/employee/tasks'
+      preLoaderRoute: typeof EmployeeTasksRouteImport
+      parentRoute: typeof EmployeeRoute
+    }
     '/login/admin': {
       id: '/login/admin'
       path: '/login/admin'
@@ -413,10 +487,28 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface EmployeeRouteChildren {
+  EmployeeHistoryRoute: typeof EmployeeHistoryRoute
+  EmployeeProfileRoute: typeof EmployeeProfileRoute
+  EmployeeTasksRoute: typeof EmployeeTasksRoute
+  EmployeeIndexRoute: typeof EmployeeIndexRoute
+}
+
+const EmployeeRouteChildren: EmployeeRouteChildren = {
+  EmployeeHistoryRoute: EmployeeHistoryRoute,
+  EmployeeProfileRoute: EmployeeProfileRoute,
+  EmployeeTasksRoute: EmployeeTasksRoute,
+  EmployeeIndexRoute: EmployeeIndexRoute,
+}
+
+const EmployeeRouteWithChildren = EmployeeRoute._addFileChildren(
+  EmployeeRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  EmployeeRoute: EmployeeRoute,
+  EmployeeRoute: EmployeeRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
