@@ -41,7 +41,14 @@ export const CUSTOMER_TYPE_LABEL: Record<string, string> = {
   HOME: "Home",
   SHOP: "Shop",
   OFFICE: "Office",
+  CUSTOM: "Custom",
 };
+
+/** Shows the admin's own type (e.g. "Hostel") for custom customers. */
+export function customerTypeLabel(c: { customer_type: string; custom_type?: string | null }): string {
+  if (c.customer_type === "CUSTOM") return c.custom_type || "Custom";
+  return CUSTOMER_TYPE_LABEL[c.customer_type] ?? c.customer_type;
+}
 
 /** Formats a number of seconds as "1h 05m", "12m 30s" or "45s". */
 export function formatDuration(seconds: number | null | undefined): string {
