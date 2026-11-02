@@ -15,6 +15,13 @@
       "when": 1793589894635,
       "tag": "0001_business_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793603683696,
+      "tag": "0002_customer_type_custom",
+      "breakpoints": true
     }
   ]
 }

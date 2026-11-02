@@ -902,7 +902,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "employee"
-      customer_type: "HOME" | "SHOP" | "OFFICE"
+      customer_type: "HOME" | "SHOP" | "OFFICE" | "CUSTOM"
       product_kind: "FILLED_CAN" | "PACKET" | "EMPTY_CAN" | "OTHER"
       record_status: "ACTIVE" | "INACTIVE"
       task_status:
@@ -1048,7 +1048,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "employee"],
-      customer_type: ["HOME", "SHOP", "OFFICE"],
+      customer_type: ["HOME", "SHOP", "OFFICE", "CUSTOM"],
       product_kind: ["FILLED_CAN", "PACKET", "EMPTY_CAN", "OTHER"],
       record_status: ["ACTIVE", "INACTIVE"],
       task_status: [
