@@ -15,6 +15,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminTasksRouteImport } from './routes/admin.tasks'
 import { Route as LoginAdminRouteImport } from './routes/login.admin'
 import { Route as LoginEmployeeRouteImport } from './routes/login.employee'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin.customers.index'
@@ -50,6 +51,11 @@ const SetupRoute = SetupRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTasksRoute = AdminTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => AdminRoute,
 } as any)
 const LoginAdminRoute = LoginAdminRouteImport.update({
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/admin/tasks': typeof AdminTasksRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/employee': typeof LoginEmployeeRoute
   '/admin/': typeof AdminIndexRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/admin/tasks': typeof AdminTasksRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/employee': typeof LoginEmployeeRoute
   '/admin': typeof AdminIndexRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/admin/tasks': typeof AdminTasksRoute
   '/login/admin': typeof LoginAdminRoute
   '/login/employee': typeof LoginEmployeeRoute
   '/admin/': typeof AdminIndexRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
+    | '/admin/tasks'
     | '/login/admin'
     | '/login/employee'
     | '/admin/'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
+    | '/admin/tasks'
     | '/login/admin'
     | '/login/employee'
     | '/admin'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
+    | '/admin/tasks'
     | '/login/admin'
     | '/login/employee'
     | '/admin/'
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/tasks': {
+      id: '/admin/tasks'
+      path: '/tasks'
+      fullPath: '/admin/tasks'
+      preLoaderRoute: typeof AdminTasksRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/login/admin': {
       id: '/login/admin'
       path: '/login/admin'
@@ -271,6 +290,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminTasksRoute: typeof AdminTasksRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersCustomerIdRoute: typeof AdminCustomersCustomerIdRoute
   AdminEmployeesEmployeeIdRoute: typeof AdminEmployeesEmployeeIdRoute
@@ -279,6 +299,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminTasksRoute: AdminTasksRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersCustomerIdRoute: AdminCustomersCustomerIdRoute,
   AdminEmployeesEmployeeIdRoute: AdminEmployeesEmployeeIdRoute,
