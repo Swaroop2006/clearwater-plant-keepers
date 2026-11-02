@@ -19,6 +19,8 @@ import { Route as LoginAdminRouteImport } from './routes/login.admin'
 import { Route as LoginEmployeeRouteImport } from './routes/login.employee'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin.customers.index'
 import { Route as AdminCustomersCustomerIdRouteImport } from './routes/admin.customers.$customerId'
+import { Route as AdminEmployeesIndexRouteImport } from './routes/admin.employees.index'
+import { Route as AdminEmployeesEmployeeIdRouteImport } from './routes/admin.employees.$employeeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -71,6 +73,17 @@ const AdminCustomersCustomerIdRoute =
     path: '/customers/$customerId',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminEmployeesIndexRoute = AdminEmployeesIndexRouteImport.update({
+  id: '/employees/',
+  path: '/employees/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEmployeesEmployeeIdRoute =
+  AdminEmployeesEmployeeIdRouteImport.update({
+    id: '/employees/$employeeId',
+    path: '/employees/$employeeId',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,7 +95,9 @@ export interface FileRoutesByFullPath {
   '/login/employee': typeof LoginEmployeeRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
+  '/admin/employees/$employeeId': typeof AdminEmployeesEmployeeIdRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
+  '/admin/employees/': typeof AdminEmployeesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,7 +108,9 @@ export interface FileRoutesByTo {
   '/login/employee': typeof LoginEmployeeRoute
   '/admin': typeof AdminIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
+  '/admin/employees/$employeeId': typeof AdminEmployeesEmployeeIdRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
+  '/admin/employees': typeof AdminEmployeesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,7 +123,9 @@ export interface FileRoutesById {
   '/login/employee': typeof LoginEmployeeRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
+  '/admin/employees/$employeeId': typeof AdminEmployeesEmployeeIdRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
+  '/admin/employees/': typeof AdminEmployeesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,7 +139,9 @@ export interface FileRouteTypes {
     | '/login/employee'
     | '/admin/'
     | '/admin/customers/$customerId'
+    | '/admin/employees/$employeeId'
     | '/admin/customers/'
+    | '/admin/employees/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,7 +152,9 @@ export interface FileRouteTypes {
     | '/login/employee'
     | '/admin'
     | '/admin/customers/$customerId'
+    | '/admin/employees/$employeeId'
     | '/admin/customers'
+    | '/admin/employees'
   id:
     | '__root__'
     | '/'
@@ -143,7 +166,9 @@ export interface FileRouteTypes {
     | '/login/employee'
     | '/admin/'
     | '/admin/customers/$customerId'
+    | '/admin/employees/$employeeId'
     | '/admin/customers/'
+    | '/admin/employees/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,19 +253,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomersCustomerIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/employees/': {
+      id: '/admin/employees/'
+      path: '/employees'
+      fullPath: '/admin/employees/'
+      preLoaderRoute: typeof AdminEmployeesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/employees/$employeeId': {
+      id: '/admin/employees/$employeeId'
+      path: '/employees/$employeeId'
+      fullPath: '/admin/employees/$employeeId'
+      preLoaderRoute: typeof AdminEmployeesEmployeeIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersCustomerIdRoute: typeof AdminCustomersCustomerIdRoute
+  AdminEmployeesEmployeeIdRoute: typeof AdminEmployeesEmployeeIdRoute
   AdminCustomersIndexRoute: typeof AdminCustomersIndexRoute
+  AdminEmployeesIndexRoute: typeof AdminEmployeesIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersCustomerIdRoute: AdminCustomersCustomerIdRoute,
+  AdminEmployeesEmployeeIdRoute: AdminEmployeesEmployeeIdRoute,
   AdminCustomersIndexRoute: AdminCustomersIndexRoute,
+  AdminEmployeesIndexRoute: AdminEmployeesIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
