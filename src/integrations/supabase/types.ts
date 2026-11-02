@@ -253,8 +253,22 @@ export type Database = {
             foreignKeyName: "delivery_tasks_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_stats"
+            referencedColumns: ["employee_id"]
           },
           {
             foreignKeyName: "delivery_tasks_employee_id_fkey"
@@ -294,6 +308,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "employee_permissions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee_stats"
+            referencedColumns: ["employee_id"]
+          },
           {
             foreignKeyName: "employee_permissions_employee_id_fkey"
             columns: ["employee_id"]
@@ -464,17 +485,419 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      customer_stats: {
+        Row: {
+          customer_id: string | null
+          delivery_days: number | null
+          last_delivery_at: string | null
+          total_cans: number | null
+          total_deliveries: number | null
+          total_packets: number | null
+        }
+        Relationships: []
+      }
+      employee_stats: {
+        Row: {
+          avg_duration_seconds: number | null
+          delivered: number | null
+          employee_id: string | null
+          failed: number | null
+          in_progress: number | null
+          last_delivery_at: string | null
+          on_hold: number | null
+          pending: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_dashboard: { Args: never; Returns: Json }
+      admin_exists: { Args: never; Returns: boolean }
+      bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       business_tz: { Args: never; Returns: string }
+      cancel_delivery_task: {
+        Args: { _reason: string; _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_delivery: {
+        Args: {
+          _empty_cans_returned?: number
+          _items: Json
+          _notes?: string
+          _task_id: string
+        }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_delivery_task: {
+        Args: {
+          _customer_id: string
+          _employee_id: string
+          _items: Json
+          _notes?: string
+          _priority: number
+          _scheduled_date?: string
+        }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_product: {
+        Args: {
+          _kind: Database["public"]["Enums"]["product_kind"]
+          _min_stock: number
+          _name: string
+          _opening_stock: number
+          _unit: string
+        }
+        Returns: {
+          available_quantity: number
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["product_kind"]
+          min_stock_level: number
+          name: string
+          product_code: string
+          unit: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_employee_id: { Args: never; Returns: string }
+      delivery_report: { Args: { _from: string; _to: string }; Returns: Json }
+      fail_delivery: {
+        Args: { _reason: string; _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      hold_delivery: {
+        Args: { _reason: string; _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      log_task: {
+        Args: {
+          _from: Database["public"]["Enums"]["task_status"]
+          _note: string
+          _task: string
+          _to: Database["public"]["Enums"]["task_status"]
+        }
+        Returns: undefined
+      }
+      my_next_task_id: { Args: never; Returns: string }
+      next_eligible_task_id: { Args: { _employee: string }; Returns: string }
+      reassign_delivery_task: {
+        Args: { _employee_id: string; _priority?: number; _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_stock_movement: {
+        Args: {
+          _notes?: string
+          _product_id: string
+          _quantity: number
+          _type: Database["public"]["Enums"]["txn_type"]
+        }
+        Returns: {
+          created_at: string
+          id: string
+          new_stock: number
+          notes: string | null
+          performed_by: string | null
+          previous_stock: number
+          product_id: string
+          quantity: number
+          task_id: string | null
+          txn_code: string
+          txn_type: Database["public"]["Enums"]["txn_type"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inventory_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      require_admin: { Args: never; Returns: undefined }
+      resume_delivery_task: {
+        Args: { _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_task_priority: {
+        Args: { _priority: number; _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      start_delivery: {
+        Args: { _task_id: string }
+        Returns: {
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          duration_seconds: number | null
+          employee_id: string
+          empty_cans_returned: number
+          failure_reason: string | null
+          hold_reason: string | null
+          id: string
+          notes: string | null
+          priority: number
+          scheduled_date: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
