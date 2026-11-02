@@ -72,7 +72,7 @@ function ReportsPage() {
         <ErrorNote error={q.error} />
       ) : r ? (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <StatCard label="Total tasks" value={r.total} icon={Truck} />
             <StatCard label="Successful" value={r.delivered} icon={CheckCircle2} tone="success" />
             <StatCard label="Pending" value={r.pending} icon={Clock} tone="warning" />
