@@ -254,7 +254,7 @@ function MovementDialog({ product, onClose }: { product: Product | null; onClose
       _product_id: product.id,
       _type: type,
       _quantity: signed && direction === "out" ? -n : n,
-      _notes: notes || undefined,
+      ...(notes.trim() ? { _notes: notes } : {}),
     });
     setBusy(false);
     if (error) { toast.error(errorMessage(error)); return; }

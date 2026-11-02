@@ -79,7 +79,7 @@ function EmployeeDetail() {
   }
 
   async function togglePerm(key: (typeof PERMS)[number]["key"], value: boolean) {
-    const { error } = await supabase.from("employee_permissions").update({ [key]: value }).eq("employee_id", employeeId);
+    const { error } = await supabase.from("employee_permissions").update({ [key]: value } as { can_start_delivery: boolean }).eq("employee_id", employeeId);
     if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Permission updated");
     refresh();

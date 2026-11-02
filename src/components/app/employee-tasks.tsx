@@ -227,16 +227,16 @@ function CompleteDialog({ task, open, onClose }: { task: MyTask; open: boolean; 
   async function submit() {
     if (busy) return;
     const items = task.delivery_items.map((i) => ({ item_id: i.id, delivered_qty: Number(value(i.id, i.requested_qty)) }));
-    for (const [n, i] of items.entries()) {
-      const req = task.delivery_items[n].requested_qty;
-      if (!Number.isInteger(i.delivered_qty) || i.delivered_qty < 0) { toast.error("Quantities must be whole numbers, 0 or more"); return; }
-      if (i.delivered_qty > req) { toast.error(`You can't deliver more than ${req} ${task.delivery_items[n].product_name}`); return; }
+    for (const src of task.delivery_items) {
+      const d = Number(value(src.id, src.requested_qty));
+      if (!Number.isInteger(d) || d < 0) { toast.error("Quantities must be whole numbers, 0 or more"); return; }
+      if (d > src.requested_qty) { toast.error(`You can't deliver more than ${src.requested_qty} ${src.product_name}`); return; }
     }
     if (items.every((i) => i.delivered_qty === 0)) { toast.error('Nothing delivered? Use "Report failed" instead.'); return; }
     const e = Number(empties);
     if (!Number.isInteger(e) || e < 0) { toast.error("Empty cans returned must be 0 or more"); return; }
     setBusy(true);
-    const { error } = await supabase.rpc("complete_delivery", { _task_id: task.id, _items: items, _empty_cans_returned: e, _notes: notes || undefined });
+    const { error } = await supabase.rpc("complete_delivery", { _task_id: task.id, _items: items, _empty_cans_returned: e, ...(notes.trim() ? { _notes: notes } : {}) });
     setBusy(false);
     if (error) {
       toast.error(errorMessage(error));

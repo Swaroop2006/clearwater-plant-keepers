@@ -45,8 +45,9 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
   }, [open]);
 
   useEffect(() => {
-    if (open && lines.length === 1 && !lines[0].product_id && deliverable.length) {
-      setLines([{ product_id: (deliverable.find((p) => p.kind === "FILLED_CAN") ?? deliverable[0]).id, quantity: "1" }]);
+    const first = deliverable.find((p) => p.kind === "FILLED_CAN") ?? deliverable[0];
+    if (open && lines.length === 1 && !lines[0]?.product_id && first) {
+      setLines([{ product_id: first.id, quantity: "1" }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, deliverable.length]);
@@ -70,8 +71,8 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
       _employee_id: employeeId,
       _priority: Number(priority),
       _items: items.map((i) => ({ product_id: i.product_id, quantity: Number(i.quantity) })),
-      _scheduled_date: scheduled || undefined,
-      _notes: notes || undefined,
+      ...(scheduled ? { _scheduled_date: scheduled } : {}),
+      ...(notes.trim() ? { _notes: notes } : {}),
     });
     setBusy(false);
     if (error) { toast.error(errorMessage(error)); return; }
