@@ -17,7 +17,7 @@ const createSchema = z.object({
   mobile: z.string().trim().regex(/^\+?[0-9]{10,13}$/, "Enter a valid mobile number"),
   username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,30}$/, "Username: 3–30 lowercase letters, numbers, . _ -"),
   contactEmail: z.string().trim().email("Enter a valid email").optional().or(z.literal("")),
-  password: z.string().min(8, "Password must be at least 8 characters").max(72),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72),
 });
 
 export const createEmployee = createServerFn({ method: "POST" })
@@ -93,7 +93,7 @@ export const setEmployeeStatus = createServerFn({ method: "POST" })
 export const resetEmployeePassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ employeeId: z.string().uuid(), password: z.string().min(8, "Password must be at least 8 characters").max(72) }).parse(input),
+    z.object({ employeeId: z.string().uuid(), password: z.string().min(6, "Password must be at least 6 characters").max(72) }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);

@@ -45,7 +45,7 @@ function SettingsPage() {
   }
 
   async function changePassword() {
-    if (pw.next.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (pw.next.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     if (pw.next !== pw.confirm) { toast.error("Passwords do not match"); return; }
     setPwBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw.next });

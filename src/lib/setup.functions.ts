@@ -11,7 +11,7 @@ export const createFirstAdmin = createServerFn({ method: "POST" })
       .object({
         name: z.string().trim().min(1).max(120),
         email: z.string().trim().toLowerCase().email("Enter a valid email"),
-        password: z.string().min(8, "Password must be at least 8 characters").max(72),
+        password: z.string().min(6, "Password must be at least 6 characters").max(72),
       })
       .parse(input),
   )

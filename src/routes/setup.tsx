@@ -40,7 +40,7 @@ function Setup() {
     setError(null);
     if (!form.name.trim()) { setError("Enter your name."); return; }
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) { setError("Enter a valid email."); return; }
-    if (form.password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (form.password !== form.confirm) { setError("Passwords do not match."); return; }
     setBusy(true);
     try {
