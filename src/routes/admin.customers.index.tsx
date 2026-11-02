@@ -49,14 +49,14 @@ function CustomersPage() {
 
   async function toggle(id: string, next: "ACTIVE" | "INACTIVE") {
     const { error } = await supabase.from("customers").update({ status: next }).eq("id", id);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success(next === "ACTIVE" ? "Customer activated" : "Customer deactivated");
     qc.invalidateQueries({ queryKey: ["customers"] });
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from("customers").delete().eq("id", id);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Customer deleted");
     qc.invalidateQueries({ queryKey: ["customers"] });
   }

@@ -118,8 +118,9 @@ export function errorMessage(err: unknown): string {
 }
 
 export function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
-  if (rows.length === 0) return;
-  const headers = Object.keys(rows[0]);
+  const first = rows[0];
+  if (!first) return;
+  const headers = Object.keys(first);
   const esc = (v: unknown) => {
     const s = v == null ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

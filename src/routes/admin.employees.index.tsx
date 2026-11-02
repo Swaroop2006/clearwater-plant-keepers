@@ -110,11 +110,11 @@ function AddEmployeeDialog() {
   async function submit() {
     if (busy) return;
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!MOBILE_REGEX.test(form.mobile.replace(/\s/g, ""))) e.mobile = "Enter a valid mobile number";
-    if (!USERNAME_REGEX.test(form.username.trim().toLowerCase())) e.username = "3–30 lowercase letters, numbers, dot, dash or underscore";
-    if (form.contactEmail && !/^\S+@\S+\.\S+$/.test(form.contactEmail)) e.contactEmail = "Enter a valid email";
-    if (form.password.length < 8) e.password = "At least 8 characters";
+    if (!form.name.trim()) e["name"] = "Name is required";
+    if (!MOBILE_REGEX.test(form.mobile.replace(/\s/g, ""))) e["mobile"] = "Enter a valid mobile number";
+    if (!USERNAME_REGEX.test(form.username.trim().toLowerCase())) e["username"] = "3–30 lowercase letters, numbers, dot, dash or underscore";
+    if (form.contactEmail && !/^\S+@\S+\.\S+$/.test(form.contactEmail)) e["contactEmail"] = "Enter a valid email";
+    if (form.password.length < 8) e["password"] = "At least 8 characters";
     setErrors(e);
     if (Object.keys(e).length) return;
     setBusy(true);

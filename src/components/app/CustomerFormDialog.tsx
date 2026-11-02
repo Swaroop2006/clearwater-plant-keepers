@@ -43,9 +43,9 @@ export function CustomerFormDialog({ customer, trigger }: { customer?: Customer;
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!MOBILE_REGEX.test(form.mobile.replace(/\s/g, ""))) e.mobile = "Enter a valid 10–13 digit mobile number";
-    if (form.address.trim().length < 3) e.address = "Address is required";
+    if (!form.name.trim()) e["name"] = "Name is required";
+    if (!MOBILE_REGEX.test(form.mobile.replace(/\s/g, ""))) e["mobile"] = "Enter a valid 10–13 digit mobile number";
+    if (form.address.trim().length < 3) e["address"] = "Address is required";
     for (const k of ["price_per_can", "price_per_packet"] as const) {
       const n = Number(form[k]);
       if (form[k] === "" || Number.isNaN(n) || n < 0) e[k] = "Enter a valid price (0 or more)";
@@ -70,7 +70,7 @@ export function CustomerFormDialog({ customer, trigger }: { customer?: Customer;
       ? await supabase.from("customers").update(payload).eq("id", customer.id).select("customer_code").single()
       : await supabase.from("customers").insert(payload).select("customer_code").single();
     setBusy(false);
-    if (res.error) return toast.error(errorMessage(res.error));
+    if (res.error) { toast.error(errorMessage(res.error)); return; }
     toast.success(customer ? "Customer updated" : `Customer ${res.data.customer_code} added`);
     qc.invalidateQueries({ queryKey: ["customers"] });
     qc.invalidateQueries({ queryKey: ["customer"] });
@@ -112,7 +112,7 @@ export function CustomerFormDialog({ customer, trigger }: { customer?: Customer;
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="address">Address</Label>
             <Textarea id="address" rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
+            {errors["address"] && <p className="text-xs text-destructive">{errors["address"]}</p>}
           </div>
           {field("price_per_can", "Price per water can (₹)", { type: "number", min: 0, step: "0.5", inputMode: "decimal" })}
           {field("price_per_packet", "Price per water packet (₹)", { type: "number", min: 0, step: "0.5", inputMode: "decimal" })}

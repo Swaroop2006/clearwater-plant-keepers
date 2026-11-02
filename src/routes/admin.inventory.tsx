@@ -196,13 +196,13 @@ function AddProductDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [f, setF] = useState({ name: "", unit: "can", kind: "FILLED_CAN", opening: "0", min: "10" });
   const [busy, setBusy] = useState(false);
   async function submit() {
-    if (!f.name.trim()) return toast.error("Enter a product name");
+    if (!f.name.trim()) { toast.error("Enter a product name"); return; }
     const opening = Number(f.opening), min = Number(f.min);
-    if (!Number.isInteger(opening) || opening < 0 || !Number.isInteger(min) || min < 0) return toast.error("Stock values must be whole numbers, 0 or more");
+    if (!Number.isInteger(opening) || opening < 0 || !Number.isInteger(min) || min < 0) { toast.error("Stock values must be whole numbers, 0 or more"); return; }
     setBusy(true);
     const { error } = await supabase.rpc("create_product", { _name: f.name, _unit: f.unit || "unit", _kind: f.kind as Product["kind"], _opening_stock: opening, _min_stock: min });
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Product added");
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["txns"] });
@@ -247,8 +247,8 @@ function MovementDialog({ product, onClose }: { product: Product | null; onClose
   async function submit() {
     if (!product) return;
     const n = Number(qty);
-    if (!Number.isInteger(n) || n <= 0) return toast.error("Enter a whole number greater than zero");
-    if ((type === "DAMAGE" || signed) && notes.trim().length < 3) return toast.error("Please add a note explaining this change");
+    if (!Number.isInteger(n) || n <= 0) { toast.error("Enter a whole number greater than zero"); return; }
+    if ((type === "DAMAGE" || signed) && notes.trim().length < 3) { toast.error("Please add a note explaining this change"); return; }
     setBusy(true);
     const { error } = await supabase.rpc("record_stock_movement", {
       _product_id: product.id,
@@ -257,7 +257,7 @@ function MovementDialog({ product, onClose }: { product: Product | null; onClose
       _notes: notes || undefined,
     });
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Stock updated");
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["txns"] });
@@ -312,12 +312,12 @@ function EditProductDialog({ product, onClose }: { product: Product | null; onCl
   async function submit() {
     if (!product) return;
     const min = Number(f.min);
-    if (!f.name.trim() || !f.unit.trim()) return toast.error("Name and unit are required");
-    if (!Number.isInteger(min) || min < 0) return toast.error("Minimum stock must be 0 or more");
+    if (!f.name.trim() || !f.unit.trim()) { toast.error("Name and unit are required"); return; }
+    if (!Number.isInteger(min) || min < 0) { toast.error("Minimum stock must be 0 or more"); return; }
     setBusy(true);
     const { error } = await supabase.from("products").update({ name: f.name.trim(), unit: f.unit.trim(), min_stock_level: min, is_active: f.active }).eq("id", product.id);
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Product updated");
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });

@@ -229,12 +229,12 @@ function CompleteDialog({ task, open, onClose }: { task: MyTask; open: boolean; 
     const items = task.delivery_items.map((i) => ({ item_id: i.id, delivered_qty: Number(value(i.id, i.requested_qty)) }));
     for (const [n, i] of items.entries()) {
       const req = task.delivery_items[n].requested_qty;
-      if (!Number.isInteger(i.delivered_qty) || i.delivered_qty < 0) return toast.error("Quantities must be whole numbers, 0 or more");
-      if (i.delivered_qty > req) return toast.error(`You can't deliver more than ${req} ${task.delivery_items[n].product_name}`);
+      if (!Number.isInteger(i.delivered_qty) || i.delivered_qty < 0) { toast.error("Quantities must be whole numbers, 0 or more"); return; }
+      if (i.delivered_qty > req) { toast.error(`You can't deliver more than ${req} ${task.delivery_items[n].product_name}`); return; }
     }
-    if (items.every((i) => i.delivered_qty === 0)) return toast.error('Nothing delivered? Use "Report failed" instead.');
+    if (items.every((i) => i.delivered_qty === 0)) { toast.error('Nothing delivered? Use "Report failed" instead.'); return; }
     const e = Number(empties);
-    if (!Number.isInteger(e) || e < 0) return toast.error("Empty cans returned must be 0 or more");
+    if (!Number.isInteger(e) || e < 0) { toast.error("Empty cans returned must be 0 or more"); return; }
     setBusy(true);
     const { error } = await supabase.rpc("complete_delivery", { _task_id: task.id, _items: items, _empty_cans_returned: e, _notes: notes || undefined });
     setBusy(false);
@@ -285,13 +285,13 @@ function ReasonDialog({ task, kind, onClose }: { task: MyTask; kind: "fail" | "h
   const presets = kind === "fail" ? ["Customer not available", "Address locked", "Customer refused", "Wrong address"] : ["Customer asked to come later", "Vehicle problem", "Waiting for payment"];
   async function submit() {
     if (busy || !kind) return;
-    if (reason.trim().length < 3) return toast.error("Please give a short reason");
+    if (reason.trim().length < 3) { toast.error("Please give a short reason"); return; }
     setBusy(true);
     const { error } = kind === "fail"
       ? await supabase.rpc("fail_delivery", { _task_id: task.id, _reason: reason })
       : await supabase.rpc("hold_delivery", { _task_id: task.id, _reason: reason });
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success(kind === "fail" ? "Delivery marked as failed" : "Delivery put on hold");
     invalidateMine(qc);
     setReason("");

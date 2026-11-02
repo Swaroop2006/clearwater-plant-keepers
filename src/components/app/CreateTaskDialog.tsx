@@ -55,14 +55,14 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   async function submit() {
     if (busy) return;
-    if (!customerId) return toast.error("Choose a customer");
-    if (!employeeId) return toast.error("Assign an employee");
+    if (!customerId) { toast.error("Choose a customer"); return; }
+    if (!employeeId) { toast.error("Assign an employee"); return; }
     const items = lines.filter((l) => l.product_id);
-    if (!items.length) return toast.error("Add at least one product");
-    if (new Set(items.map((i) => i.product_id)).size !== items.length) return toast.error("Each product can only be added once");
+    if (!items.length) { toast.error("Add at least one product"); return; }
+    if (new Set(items.map((i) => i.product_id)).size !== items.length) { toast.error("Each product can only be added once"); return; }
     for (const i of items) {
       const n = Number(i.quantity);
-      if (!Number.isInteger(n) || n <= 0) return toast.error("Quantities must be positive whole numbers");
+      if (!Number.isInteger(n) || n <= 0) { toast.error("Quantities must be positive whole numbers"); return; }
     }
     setBusy(true);
     const { data, error } = await supabase.rpc("create_delivery_task", {
@@ -74,7 +74,7 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
       _notes: notes || undefined,
     });
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success(`Task ${data.task_code} created`);
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });

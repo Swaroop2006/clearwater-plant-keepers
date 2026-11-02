@@ -38,10 +38,10 @@ function Setup() {
     e.preventDefault();
     if (busy) return;
     setError(null);
-    if (!form.name.trim()) return setError("Enter your name.");
-    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return setError("Enter a valid email.");
-    if (form.password.length < 8) return setError("Password must be at least 8 characters.");
-    if (form.password !== form.confirm) return setError("Passwords do not match.");
+    if (!form.name.trim()) { setError("Enter your name."); return; }
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) { setError("Enter a valid email."); return; }
+    if (form.password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (form.password !== form.confirm) { setError("Passwords do not match."); return; }
     setBusy(true);
     try {
       await create({ data: { name: form.name, email: form.email, password: form.password } });

@@ -65,22 +65,22 @@ function EmployeeDetail() {
   };
 
   async function saveDetails() {
-    if (!details.name.trim()) return toast.error("Name is required");
-    if (!MOBILE_REGEX.test(details.mobile.replace(/\s/g, ""))) return toast.error("Enter a valid mobile number");
+    if (!details.name.trim()) { toast.error("Name is required"); return; }
+    if (!MOBILE_REGEX.test(details.mobile.replace(/\s/g, ""))) { toast.error("Enter a valid mobile number"); return; }
     setSaving(true);
     const { error } = await supabase
       .from("employees")
       .update({ name: details.name.trim(), mobile: details.mobile.replace(/\s/g, ""), contact_email: details.contact_email.trim() || null })
       .eq("id", employeeId);
     setSaving(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Details saved");
     refresh();
   }
 
   async function togglePerm(key: (typeof PERMS)[number]["key"], value: boolean) {
     const { error } = await supabase.from("employee_permissions").update({ [key]: value }).eq("employee_id", employeeId);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Permission updated");
     refresh();
   }
@@ -210,7 +210,7 @@ function ResetPasswordDialog({ employeeId }: { employeeId: string }) {
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit() {
-    if (pw.length < 8) return toast.error("Password must be at least 8 characters");
+    if (pw.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setBusy(true);
     try {
       await reset({ data: { employeeId, password: pw } });
