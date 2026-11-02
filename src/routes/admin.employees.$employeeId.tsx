@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { errorMessage, fmtDate, fmtDateTime, formatDuration, MOBILE_REGEX } from "@/lib/format";
 import { TASK_SELECT, unwrap } from "@/lib/queries";
-import { resetEmployeePassword, setEmployeeStatus } from "@/server/employees.functions";
+import { resetEmployeePassword, setEmployeeStatus } from "@/lib/employees.functions";
 
 export const Route = createFileRoute("/admin/employees/$employeeId")({
   head: () => ({ meta: [{ title: "Employee — Water Plant Admin" }] }),

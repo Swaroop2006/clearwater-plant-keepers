@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmtDate, formatDuration, MOBILE_REGEX, USERNAME_REGEX } from "@/lib/format";
 import { unwrap } from "@/lib/queries";
-import { createEmployee } from "@/server/employees.functions";
+import { createEmployee } from "@/lib/employees.functions";
 
 export const Route = createFileRoute("/admin/employees/")({
   head: () => ({ meta: [{ title: "Employees — Water Plant Admin" }] }),
