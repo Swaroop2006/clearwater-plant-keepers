@@ -34,23 +34,23 @@ function SettingsPage() {
 
   async function save() {
     const late = Number(f.late);
-    if (!f.business_name.trim()) return toast.error("Business name is required");
-    if (!Number.isInteger(late) || late < 5 || late > 1440) return toast.error("Late threshold must be between 5 and 1440 minutes");
+    if (!f.business_name.trim()) { toast.error("Business name is required"); return; }
+    if (!Number.isInteger(late) || late < 5 || late > 1440) { toast.error("Late threshold must be between 5 and 1440 minutes"); return; }
     setBusy(true);
     const { error } = await supabase.from("app_settings").update({ business_name: f.business_name.trim(), timezone: f.timezone, late_threshold_minutes: late }).eq("id", 1);
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success("Settings saved");
     qc.invalidateQueries();
   }
 
   async function changePassword() {
-    if (pw.next.length < 8) return toast.error("Password must be at least 8 characters");
-    if (pw.next !== pw.confirm) return toast.error("Passwords do not match");
+    if (pw.next.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (pw.next !== pw.confirm) { toast.error("Passwords do not match"); return; }
     setPwBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw.next });
     setPwBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Password changed");
     setPw({ next: "", confirm: "" });
   }

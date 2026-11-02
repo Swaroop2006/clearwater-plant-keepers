@@ -43,13 +43,13 @@ export function TaskActions({ task }: { task: { id: string; task_code: string; s
     else if (mode === "priority") ({ error } = await supabase.rpc("set_task_priority", { _task_id: task.id, _priority: Number(prio) }));
     else if (mode === "cancel") ({ error } = await supabase.rpc("cancel_delivery_task", { _task_id: task.id, _reason: reason }));
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     done(mode === "reassign" ? "Task reassigned" : mode === "priority" ? "Priority updated" : "Task cancelled");
   }
 
   async function resume() {
     const { error } = await supabase.rpc("resume_delivery_task", { _task_id: task.id });
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     done("Task returned to the queue");
   }
 

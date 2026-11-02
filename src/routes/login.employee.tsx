@@ -31,7 +31,7 @@ function EmployeeLogin() {
     e.preventDefault();
     if (busy) return;
     setError(null);
-    if (!username.trim() || !password) return setError("Enter your username and password.");
+    if (!username.trim() || !password) { setError("Enter your username and password."); return; }
     setBusy(true);
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email: employeeLoginEmail(username), password });

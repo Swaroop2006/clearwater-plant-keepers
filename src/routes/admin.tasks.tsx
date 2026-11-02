@@ -16,7 +16,7 @@ import { allCustomersLiteQuery, allEmployeesLiteQuery, TASK_SELECT } from "@/lib
 import { endOfDay, startOfDay } from "date-fns";
 
 export const Route = createFileRoute("/admin/tasks")({
-  validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s.new ? { new: true } : {}),
+  validateSearch: (s: Record<string, unknown>): { new?: boolean } => (s["new"] ? { new: true } : {}),
   head: () => ({ meta: [{ title: "Delivery Tasks — Water Plant Admin" }] }),
   component: TasksPage,
 });

@@ -30,7 +30,7 @@ function AdminLogin() {
     e.preventDefault();
     if (busy) return;
     setError(null);
-    if (!email.trim() || !password) return setError("Enter your email and password.");
+    if (!email.trim() || !password) { setError("Enter your email and password."); return; }
     setBusy(true);
     try {
       const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });

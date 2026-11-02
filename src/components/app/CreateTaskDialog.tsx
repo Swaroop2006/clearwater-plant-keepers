@@ -45,8 +45,9 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
   }, [open]);
 
   useEffect(() => {
-    if (open && lines.length === 1 && !lines[0].product_id && deliverable.length) {
-      setLines([{ product_id: (deliverable.find((p) => p.kind === "FILLED_CAN") ?? deliverable[0]).id, quantity: "1" }]);
+    const first = deliverable.find((p) => p.kind === "FILLED_CAN") ?? deliverable[0];
+    if (open && lines.length === 1 && !lines[0]?.product_id && first) {
+      setLines([{ product_id: first.id, quantity: "1" }]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, deliverable.length]);
@@ -55,14 +56,14 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   async function submit() {
     if (busy) return;
-    if (!customerId) return toast.error("Choose a customer");
-    if (!employeeId) return toast.error("Assign an employee");
+    if (!customerId) { toast.error("Choose a customer"); return; }
+    if (!employeeId) { toast.error("Assign an employee"); return; }
     const items = lines.filter((l) => l.product_id);
-    if (!items.length) return toast.error("Add at least one product");
-    if (new Set(items.map((i) => i.product_id)).size !== items.length) return toast.error("Each product can only be added once");
+    if (!items.length) { toast.error("Add at least one product"); return; }
+    if (new Set(items.map((i) => i.product_id)).size !== items.length) { toast.error("Each product can only be added once"); return; }
     for (const i of items) {
       const n = Number(i.quantity);
-      if (!Number.isInteger(n) || n <= 0) return toast.error("Quantities must be positive whole numbers");
+      if (!Number.isInteger(n) || n <= 0) { toast.error("Quantities must be positive whole numbers"); return; }
     }
     setBusy(true);
     const { data, error } = await supabase.rpc("create_delivery_task", {
@@ -70,11 +71,11 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
       _employee_id: employeeId,
       _priority: Number(priority),
       _items: items.map((i) => ({ product_id: i.product_id, quantity: Number(i.quantity) })),
-      _scheduled_date: scheduled || undefined,
-      _notes: notes || undefined,
+      ...(scheduled ? { _scheduled_date: scheduled } : {}),
+      ...(notes.trim() ? { _notes: notes } : {}),
     });
     setBusy(false);
-    if (error) return toast.error(errorMessage(error));
+    if (error) { toast.error(errorMessage(error)); return; }
     toast.success(`Task ${data.task_code} created`);
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
