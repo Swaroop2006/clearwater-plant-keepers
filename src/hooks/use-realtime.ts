@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type RealtimeTable = "delivery_tasks" | "products" | "bills" | "payments" | "customers";
+
 /** Refreshes the given query keys whenever rows in these tables change. */
-export function useRealtimeRefresh(tables: Array<"delivery_tasks" | "products">, keys: string[][]) {
+export function useRealtimeRefresh(tables: RealtimeTable[], keys: string[][]) {
   const qc = useQueryClient();
   const sig = JSON.stringify([tables, keys]);
   useEffect(() => {

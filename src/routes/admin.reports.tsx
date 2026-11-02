@@ -1,187 +1,661 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { endOfMonth, format, parse, startOfMonth } from "date-fns";
-import { CheckCircle2, Clock, Download, Droplet, Package, PackageOpen, Timer, Truck, XCircle } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { endOfMonth, startOfMonth } from "date-fns";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Boxes,
+  CheckCircle2,
+  Clock,
+  Download,
+  Droplet,
+  IndianRupee,
+  Package,
+  PackageOpen,
+  Search,
+  Timer,
+  Truck,
+  Users,
+  UserCheck,
+  XCircle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { EmptyState, ErrorNote, Loading, PageHeader, Panel, StatCard } from "@/components/app/ui-bits";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { downloadCsv, fmtMoney, PRODUCT_KIND_LABEL } from "@/lib/format";
+import { customerTypeLabel, fmtDate, fmtDateTime, fmtMoney, formatDuration, PRODUCT_KIND_LABEL } from "@/lib/format";
 import { isoDate } from "@/lib/date-ranges";
 import { unwrap } from "@/lib/queries";
+import { downloadWorkbook, itemColumns, flattenItems } from "@/lib/excel";
 
 export const Route = createFileRoute("/admin/reports")({
+  validateSearch: (s: Record<string, unknown>): { view?: string; from?: string; to?: string } => {
+    const res: { view?: string; from?: string; to?: string } = {};
+    if (typeof s["view"] === "string") res.view = s["view"];
+    if (typeof s["from"] === "string") res.from = s["from"];
+    if (typeof s["to"] === "string") res.to = s["to"];
+    return res;
+  },
   head: () => ({ meta: [{ title: "Reports — Water Plant Admin" }] }),
   component: ReportsPage,
 });
 
-type Report = {
-  total: number; delivered: number; failed: number; pending: number; cancelled: number;
-  cans: number; packets: number; empty_returned: number; avg_minutes: number | null;
-  daily: { date: string; delivered: number; failed: number; cans: number; packets: number }[];
-  monthly: { month: string; delivered: number; failed: number; cans: number; packets: number }[];
-  customers: { code: string; name: string; deliveries: number; days: number; failed: number; cans: number; packets: number; amount: number }[];
-  employees: { code: string; name: string; assigned: number; delivered: number; failed: number; avg_minutes: number | null; fastest_minutes: number | null; slowest_minutes: number | null }[];
-  inventory: { name: string; unit: string; kind: string; stock: number; min: number; low: boolean; in: number; out: number; delivered: number; damaged: number; returned: number }[];
-};
-
 function ReportsPage() {
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/admin/reports" });
+
   const now = new Date();
-  const [from, setFrom] = useState(isoDate(startOfMonth(now)));
-  const [to, setTo] = useState(isoDate(endOfMonth(now)));
-  const [grain, setGrain] = useState<"daily" | "monthly">("daily");
+  const defaultFrom = isoDate(startOfMonth(now));
+  const defaultTo = isoDate(endOfMonth(now));
+
+  const [from, setFrom] = useState(search.from ?? defaultFrom);
+  const [to, setTo] = useState(search.to ?? defaultTo);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const valid = Boolean(from && to && from <= to);
 
-  const q = useQuery({
-    queryKey: ["report", from, to],
+  // Queries for the three reports
+  const customersReportQuery = useQuery({
+    queryKey: ["customer-report", from, to],
     enabled: valid,
-    queryFn: async () => (await unwrap(supabase.rpc("delivery_report", { _from: from, _to: to }))) as unknown as Report,
+    queryFn: async () => {
+      const data = await unwrap(supabase.rpc("customer_report", { _from: from, _to: to }));
+      return (data ?? []) as any[];
+    },
   });
 
-  const r = q.data;
-  const series = r
-    ? grain === "daily"
-      ? r.daily.map((d) => ({ ...d, label: format(new Date(d.date), "d MMM") }))
-      : r.monthly.map((m) => ({ ...m, label: format(parse(m.month, "yyyy-MM", new Date()), "MMM yyyy") }))
-    : [];
-  const tag = `${from}_to_${to}`;
+  const employeesReportQuery = useQuery({
+    queryKey: ["employee-report", from, to],
+    enabled: valid,
+    queryFn: async () => {
+      const data = await unwrap(supabase.rpc("employee_report", { _from: from, _to: to }));
+      return (data ?? []) as any[];
+    },
+  });
+
+  const inventoryReportQuery = useQuery({
+    queryKey: ["inventory-report", from, to],
+    enabled: valid,
+    queryFn: async () => {
+      const data = await unwrap(supabase.rpc("inventory_report", { _from: from, _to: to }));
+      return data as { products: any[]; movements: any[] };
+    },
+  });
+
+  const view = search.view ?? "cards";
+
+  // Data
+  const customerRows = customersReportQuery.data ?? [];
+  const employeeRows = employeesReportQuery.data ?? [];
+  const inventoryData = inventoryReportQuery.data ?? { products: [], movements: [] };
+
+  // Summary Metrics
+  const totalCustomerDeliveries = customerRows.reduce((s, r) => s + (r.deliveries || 0), 0);
+  const totalBilled = customerRows.reduce((s, r) => s + Number(r.billed || 0), 0);
+  const totalOutstanding = customerRows.reduce((s, r) => s + Number(r.outstanding || 0), 0);
+
+  const totalAssignedDeliveries = employeeRows.reduce((s, r) => s + (r.assigned || 0), 0);
+  const totalCompletedDeliveries = employeeRows.reduce((s, r) => s + (r.delivered || 0), 0);
+  const totalCollectedByStaff = employeeRows.reduce((s, r) => s + Number(r.amount_collected || 0), 0);
+
+  const totalProducts = inventoryData.products.length;
+  const lowStockProducts = inventoryData.products.filter((p) => p.low).length;
+  const totalDeliveriesStock = inventoryData.products.reduce((s, p) => s + (p.delivered || 0), 0);
+
+  // Filtered views
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm.trim()) return customerRows;
+    const term = searchTerm.toLowerCase();
+    return customerRows.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.code.toLowerCase().includes(term) ||
+        c.mobile.includes(term),
+    );
+  }, [customerRows, searchTerm]);
+
+  const filteredEmployees = useMemo(() => {
+    if (!searchTerm.trim()) return employeeRows;
+    const term = searchTerm.toLowerCase();
+    return employeeRows.filter(
+      (e) =>
+        e.name.toLowerCase().includes(term) ||
+        e.code.toLowerCase().includes(term) ||
+        e.mobile.includes(term),
+    );
+  }, [employeeRows, searchTerm]);
+
+  const filteredInventory = useMemo(() => {
+    if (!searchTerm.trim()) return inventoryData.products;
+    const term = searchTerm.toLowerCase();
+    return inventoryData.products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.code.toLowerCase().includes(term),
+    );
+  }, [inventoryData.products, searchTerm]);
+
+  // Excel Exporters
+  async function exportCustomerExcel() {
+    const dynamicCols = itemColumns(customerRows, "Delivered ");
+    const flattened = flattenItems(customerRows);
+
+    await downloadWorkbook(`Customer_Totals_${from}_to_${to}.xlsx`, [
+      {
+        name: "Customer Totals",
+        columns: [
+          { header: "Customer ID", key: "code" },
+          { header: "Customer Name", key: "name" },
+          { header: "Mobile", key: "mobile" },
+          { header: "Customer Type", key: "type_label" },
+          { header: "Deliveries", key: "deliveries", type: "int" },
+          { header: "Delivery Days", key: "delivery_days", type: "int" },
+          { header: "20L Cans Delivered", key: "cans", type: "int" },
+          { header: "Packets Delivered", key: "packets", type: "int" },
+          ...dynamicCols,
+          { header: "Period Billed", key: "billed", type: "money" },
+          { header: "Period Received", key: "received", type: "money" },
+          { header: "Current Outstanding", key: "outstanding", type: "money" },
+          { header: "Empty Cans Balance", key: "empty_balance", type: "int" },
+        ],
+        rows: flattened.map((c) => ({
+          ...c,
+          type_label: customerTypeLabel({ customer_type: c.type, custom_type: c.custom_type }),
+        })),
+      },
+    ]);
+  }
+
+  async function exportEmployeeExcel() {
+    await downloadWorkbook(`Employee_Performance_${from}_to_${to}.xlsx`, [
+      {
+        name: "Employee Performance",
+        columns: [
+          { header: "Employee Code", key: "code" },
+          { header: "Employee Name", key: "name" },
+          { header: "Mobile", key: "mobile" },
+          { header: "Status", key: "status" },
+          { header: "Assigned", key: "assigned", type: "int" },
+          { header: "Delivered", key: "delivered", type: "int" },
+          { header: "Failed", key: "failed", type: "int" },
+          { header: "Avg Time", key: "avg_time_formatted" },
+          { header: "Empty Cans Collected", key: "empty_collected", type: "int" },
+          { header: "Amount Collected", key: "amount_collected", type: "money" },
+        ],
+        rows: employeeRows.map((e) => ({
+          ...e,
+          avg_time_formatted: formatDuration(e.avg_duration_seconds),
+        })),
+      },
+    ]);
+  }
+
+  async function exportInventoryExcel() {
+    await downloadWorkbook(`Inventory_Report_${from}_to_${to}.xlsx`, [
+      {
+        name: "Stock Summary",
+        columns: [
+          { header: "Product Code", key: "code" },
+          { header: "Product Name", key: "name" },
+          { header: "Type", key: "kind_label" },
+          { header: "Unit", key: "unit" },
+          { header: "Opening Stock", key: "opening", type: "int" },
+          { header: "Added (In)", key: "added", type: "int" },
+          { header: "Returned Empties", key: "returned", type: "int" },
+          { header: "Delivered (Out)", key: "delivered", type: "int" },
+          { header: "Damaged", key: "damaged", type: "int" },
+          { header: "Current Available", key: "current", type: "int" },
+          { header: "Min Alert Level", key: "min", type: "int" },
+          { header: "Status", key: "status" },
+        ],
+        rows: inventoryData.products.map((p) => ({
+          ...p,
+          kind_label: PRODUCT_KIND_LABEL[p.kind] ?? p.kind,
+          status: p.low ? "Low Stock" : "Healthy",
+        })),
+      },
+      {
+        name: "Transactions Audit",
+        columns: [
+          { header: "Txn Code", key: "code" },
+          { header: "Date", key: "date", type: "datetime" },
+          { header: "Product", key: "product" },
+          { header: "Type", key: "type" },
+          { header: "Quantity", key: "quantity", type: "int" },
+          { header: "Previous Stock", key: "previous", type: "int" },
+          { header: "New Stock", key: "new", type: "int" },
+          { header: "Task Code", key: "task_code" },
+          { header: "Notes", key: "notes" },
+        ],
+        rows: inventoryData.movements.map((m) => ({
+          ...m,
+          task_code: m.task_code ?? "—",
+        })),
+      },
+    ]);
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Reports"
-        description="Calculated from completed delivery records. Pending, failed and cancelled tasks never count as deliveries."
-        actions={
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="space-y-1"><Label htmlFor="rf" className="text-xs">From</Label><Input id="rf" type="date" className="bg-card" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div className="space-y-1"><Label htmlFor="rt" className="text-xs">To</Label><Input id="rt" type="date" className="bg-card" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          {view !== "cards" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-2 mb-1 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate({ search: { from, to } })}
+            >
+              <ArrowLeft className="mr-1 h-4 w-4" /> Back to Report Cards
+            </Button>
+          ) : null}
+          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+            {view === "customers"
+              ? "Customer-wise Totals Report"
+              : view === "employees"
+                ? "Employee-wise Performance Report"
+                : view === "inventory"
+                  ? "Inventory Movements & Current Stock Report"
+                  : "Business Reports"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Calculated strictly from completed transactions and audit logs.
+          </p>
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1 shadow-soft">
+            <span className="px-2 text-xs font-semibold text-muted-foreground">From</span>
+            <Input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="h-8 w-36 border-0 bg-transparent text-xs"
+            />
+            <span className="px-1 text-xs font-semibold text-muted-foreground">To</span>
+            <Input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="h-8 w-36 border-0 bg-transparent text-xs"
+            />
           </div>
-        }
-      />
+        </div>
+      </div>
+
       {!valid ? (
-        <ErrorNote error={{ message: "Choose a valid date range (start before end)." }} />
-      ) : q.isLoading ? (
+        <ErrorNote error={{ message: "Choose a valid date range (start date before end date)." }} />
+      ) : customersReportQuery.isLoading || employeesReportQuery.isLoading || inventoryReportQuery.isLoading ? (
         <Loading />
-      ) : q.error ? (
-        <ErrorNote error={q.error} />
-      ) : r ? (
+      ) : customersReportQuery.error ? (
+        <ErrorNote error={customersReportQuery.error} />
+      ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatCard label="Total tasks" value={r.total} icon={Truck} />
-            <StatCard label="Successful" value={r.delivered} icon={CheckCircle2} tone="success" />
-            <StatCard label="Pending" value={r.pending} icon={Clock} tone="warning" />
-            <StatCard label="Failed" value={r.failed} icon={XCircle} tone="destructive" />
-            <StatCard label="Cans delivered" value={r.cans} icon={Droplet} />
-            <StatCard label="Packets delivered" value={r.packets} icon={Package} />
-            <StatCard label="Empties returned" value={r.empty_returned} icon={PackageOpen} tone="navy" />
-            <StatCard label="Avg time" value={<span className="text-xl">{r.avg_minutes != null ? `${r.avg_minutes} min` : "—"}</span>} icon={Timer} tone="info" />
-          </div>
+          {/* VIEW: 3 DISTINCT REPORT SUMMARY CARDS */}
+          {view === "cards" && (
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Card 1: Customer-wise Totals */}
+              <div className="flex flex-col justify-between rounded-3xl border bg-card p-6 shadow-card transition-all hover:border-primary/40">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-2xl bg-primary/10 p-3 text-primary">
+                      <Users className="h-6 w-6" />
+                    </span>
+                    <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
+                      {customerRows.length} Customers
+                    </span>
+                  </div>
 
-          <Panel
-            title="Deliveries over time"
-            action={
-              <div className="flex gap-2">
-                <Tabs value={grain} onValueChange={(v) => setGrain(v as "daily" | "monthly")}>
-                  <TabsList className="h-8"><TabsTrigger value="daily">Daily</TabsTrigger><TabsTrigger value="monthly">Monthly</TabsTrigger></TabsList>
-                </Tabs>
-                <Button size="sm" variant="outline" onClick={() => downloadCsv(`${grain}-deliveries_${tag}.csv`, grain === "daily" ? r.daily : r.monthly)}><Download /> CSV</Button>
+                  <div>
+                    <h2 className="font-display text-xl font-bold text-foreground">Customer-wise Totals</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Deliveries, item-wise breakdown, billing amount, payments, and outstanding balances per customer.
+                    </p>
+                  </div>
+
+                  {/* Preview Metrics */}
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/30 p-3 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total Deliveries</p>
+                      <p className="text-lg font-extrabold tabular-nums text-foreground">{totalCustomerDeliveries}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Period Billed</p>
+                      <p className="text-lg font-extrabold tabular-nums text-primary">{fmtMoney(totalBilled)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-2 border-t pt-4">
+                  <Button
+                    variant="water"
+                    className="w-full justify-between"
+                    onClick={() => navigate({ search: { view: "customers", from, to } })}
+                  >
+                    View Detailed Report <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={exportCustomerExcel}
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> Export to Excel (.xlsx)
+                  </Button>
+                </div>
               </div>
-            }
-          >
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={series}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
-                  <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--border)" }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="delivered" name="Deliveries" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="cans" name="Cans" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="packets" name="Packets" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="failed" name="Failed" fill="var(--chart-5)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+
+              {/* Card 2: Employee-wise Performance */}
+              <div className="flex flex-col justify-between rounded-3xl border bg-card p-6 shadow-card transition-all hover:border-primary/40">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-2xl bg-success/10 p-3 text-success-foreground">
+                      <UserCheck className="h-6 w-6" />
+                    </span>
+                    <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
+                      {employeeRows.length} Staff Members
+                    </span>
+                  </div>
+
+                  <div>
+                    <h2 className="font-display text-xl font-bold text-foreground">Employee-wise Performance</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Deliveries completed, completion rates, delivery speed, payments collected, and empty cans returned.
+                    </p>
+                  </div>
+
+                  {/* Preview Metrics */}
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/30 p-3 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Deliveries Done</p>
+                      <p className="text-lg font-extrabold tabular-nums text-success-foreground">{totalCompletedDeliveries} / {totalAssignedDeliveries}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Collected by Staff</p>
+                      <p className="text-lg font-extrabold tabular-nums text-foreground">{fmtMoney(totalCollectedByStaff)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-2 border-t pt-4">
+                  <Button
+                    variant="water"
+                    className="w-full justify-between"
+                    onClick={() => navigate({ search: { view: "employees", from, to } })}
+                  >
+                    View Detailed Report <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={exportEmployeeExcel}
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> Export to Excel (.xlsx)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Card 3: Inventory Movements & Current Stock */}
+              <div className="flex flex-col justify-between rounded-3xl border bg-card p-6 shadow-card transition-all hover:border-primary/40">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-2xl bg-navy/10 p-3 text-navy-foreground">
+                      <Boxes className="h-6 w-6" />
+                    </span>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      lowStockProducts > 0 ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success-foreground"
+                    }`}>
+                      {lowStockProducts > 0 ? `${lowStockProducts} Low Stock Alerts` : "All Healthy"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h2 className="font-display text-xl font-bold text-foreground">Inventory Movements & Stock</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Opening stock, additions, returns, delivered quantities, damages, and current live warehouse inventory.
+                    </p>
+                  </div>
+
+                  {/* Preview Metrics */}
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/30 p-3 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Products Tracked</p>
+                      <p className="text-lg font-extrabold tabular-nums text-foreground">{totalProducts}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Delivered from Stock</p>
+                      <p className="text-lg font-extrabold tabular-nums text-foreground">{totalDeliveriesStock}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-2 border-t pt-4">
+                  <Button
+                    variant="water"
+                    className="w-full justify-between"
+                    onClick={() => navigate({ search: { view: "inventory", from, to } })}
+                  >
+                    View Detailed Report <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={exportInventoryExcel}
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> Export to Excel (.xlsx)
+                  </Button>
+                </div>
+              </div>
             </div>
-          </Panel>
+          )}
 
-          <Panel title="Customer-wise totals" action={<Button size="sm" variant="outline" disabled={!r.customers.length} onClick={() => downloadCsv(`customers_${tag}.csv`, r.customers)}><Download /> CSV</Button>}>
-            {!r.customers.length ? <EmptyState title="No customer deliveries in this range" /> : (
-              <div className="-mx-4 overflow-x-auto">
-                <Table>
-                  <TableHeader><TableRow>
-                    <TableHead>ID</TableHead><TableHead>Customer</TableHead><TableHead className="text-right">Deliveries</TableHead><TableHead className="text-right">Delivery days</TableHead>
-                    <TableHead className="text-right">Cans</TableHead><TableHead className="text-right">Packets</TableHead><TableHead className="text-right">Failed</TableHead><TableHead className="text-right">Value</TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {r.customers.map((c) => (
-                      <TableRow key={c.code}>
-                        <TableCell className="font-mono text-xs">{c.code}</TableCell><TableCell className="font-medium">{c.name}</TableCell>
-                        <TableCell className="text-right tabular-nums">{c.deliveries}</TableCell><TableCell className="text-right tabular-nums">{c.days}</TableCell>
-                        <TableCell className="text-right tabular-nums">{c.cans}</TableCell><TableCell className="text-right tabular-nums">{c.packets}</TableCell>
-                        <TableCell className="text-right tabular-nums">{c.failed}</TableCell><TableCell className="text-right tabular-nums">{fmtMoney(c.amount)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+          {/* VIEW: CUSTOMER-WISE TOTALS DETAILED REPORT */}
+          {view === "customers" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by customer name, phone or code..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-80 pl-8"
+                  />
+                </div>
+                <Button variant="outline" onClick={exportCustomerExcel}>
+                  <Download className="mr-1.5 h-4 w-4" /> Export to Excel (.xlsx)
+                </Button>
               </div>
-            )}
-          </Panel>
 
-          <Panel title="Employee-wise performance" action={<Button size="sm" variant="outline" disabled={!r.employees.length} onClick={() => downloadCsv(`employees_${tag}.csv`, r.employees)}><Download /> CSV</Button>}>
-            {!r.employees.length ? <EmptyState title="No employee activity in this range" /> : (
-              <div className="-mx-4 overflow-x-auto">
-                <Table>
-                  <TableHeader><TableRow>
-                    <TableHead>ID</TableHead><TableHead>Employee</TableHead><TableHead className="text-right">Assigned</TableHead><TableHead className="text-right">Delivered</TableHead>
-                    <TableHead className="text-right">Failed</TableHead><TableHead className="text-right">Avg min</TableHead><TableHead className="text-right">Fastest</TableHead><TableHead className="text-right">Slowest</TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {r.employees.map((e) => (
-                      <TableRow key={e.code}>
-                        <TableCell className="font-mono text-xs">{e.code}</TableCell><TableCell className="font-medium">{e.name}</TableCell>
-                        <TableCell className="text-right tabular-nums">{e.assigned}</TableCell><TableCell className="text-right tabular-nums">{e.delivered}</TableCell>
-                        <TableCell className="text-right tabular-nums">{e.failed}</TableCell><TableCell className="text-right tabular-nums">{e.avg_minutes ?? "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums">{e.fastest_minutes ?? "—"}</TableCell><TableCell className="text-right tabular-nums">{e.slowest_minutes ?? "—"}</TableCell>
+              <div className="rounded-2xl border bg-card shadow-soft overflow-x-auto">
+                {filteredCustomers.length === 0 ? (
+                  <EmptyState title="No customer activity found" description="No deliveries or transactions found in this period." />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer ID</TableHead>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Deliveries</TableHead>
+                        <TableHead className="text-right">Days</TableHead>
+                        <TableHead className="text-right">20L Cans</TableHead>
+                        <TableHead className="text-right">Packets</TableHead>
+                        <TableHead className="text-right">Period Billed</TableHead>
+                        <TableHead className="text-right">Period Paid</TableHead>
+                        <TableHead className="text-right">Outstanding</TableHead>
+                        <TableHead className="text-center">Empty Cans</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCustomers.map((c) => (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-mono text-xs font-semibold">{c.code}</TableCell>
+                          <TableCell>
+                            <p className="font-medium text-foreground">{c.name}</p>
+                            <p className="text-xs text-muted-foreground">{c.mobile}</p>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {customerTypeLabel({ customer_type: c.type, custom_type: c.custom_type })}
+                          </TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">{c.deliveries}</TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground tabular-nums">{c.delivery_days}</TableCell>
+                          <TableCell className="text-right font-semibold tabular-nums text-foreground">{c.cans}</TableCell>
+                          <TableCell className="text-right font-semibold tabular-nums text-foreground">{c.packets}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">{fmtMoney(c.billed)}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums text-success-foreground">{fmtMoney(c.received)}</TableCell>
+                          <TableCell className={`text-right font-bold tabular-nums ${c.outstanding > 0 ? "text-warning-foreground" : "text-muted-foreground"}`}>
+                            {fmtMoney(c.outstanding)}
+                          </TableCell>
+                          <TableCell className="text-center font-bold tabular-nums text-primary">
+                            {c.empty_balance}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </div>
-            )}
-          </Panel>
+            </div>
+          )}
 
-          <Panel title="Inventory movements & current stock" action={<Button size="sm" variant="outline" disabled={!r.inventory.length} onClick={() => downloadCsv(`inventory_${tag}.csv`, r.inventory)}><Download /> CSV</Button>}>
-            {!r.inventory.length ? <EmptyState title="No products" /> : (
-              <div className="-mx-4 overflow-x-auto">
-                <Table>
-                  <TableHeader><TableRow>
-                    <TableHead>Product</TableHead><TableHead>Type</TableHead><TableHead className="text-right">In</TableHead><TableHead className="text-right">Out</TableHead>
-                    <TableHead className="text-right">Delivered</TableHead><TableHead className="text-right">Damaged</TableHead><TableHead className="text-right">Returned</TableHead><TableHead className="text-right">Current</TableHead><TableHead />
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {r.inventory.map((p) => (
-                      <TableRow key={p.name}>
-                        <TableCell className="font-medium">{p.name}</TableCell><TableCell>{PRODUCT_KIND_LABEL[p.kind]}</TableCell>
-                        <TableCell className="text-right tabular-nums text-success">+{p.in}</TableCell><TableCell className="text-right tabular-nums text-destructive">-{p.out}</TableCell>
-                        <TableCell className="text-right tabular-nums">{p.delivered}</TableCell><TableCell className="text-right tabular-nums">{p.damaged}</TableCell>
-                        <TableCell className="text-right tabular-nums">{p.returned}</TableCell><TableCell className="text-right font-semibold tabular-nums">{p.stock} {p.unit}</TableCell>
-                        <TableCell>{p.low && <Badge variant="pending">Low (min {p.min})</Badge>}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+          {/* VIEW: EMPLOYEE-WISE PERFORMANCE DETAILED REPORT */}
+          {view === "employees" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by employee name or code..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-80 pl-8"
+                  />
+                </div>
+                <Button variant="outline" onClick={exportEmployeeExcel}>
+                  <Download className="mr-1.5 h-4 w-4" /> Export to Excel (.xlsx)
+                </Button>
               </div>
-            )}
-          </Panel>
+
+              <div className="rounded-2xl border bg-card shadow-soft overflow-x-auto">
+                {filteredEmployees.length === 0 ? (
+                  <EmptyState title="No employee records" description="No activity logged for employees in this period." />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee Code</TableHead>
+                        <TableHead>Employee Name</TableHead>
+                        <TableHead className="text-right">Assigned</TableHead>
+                        <TableHead className="text-right">Delivered</TableHead>
+                        <TableHead className="text-right">Failed</TableHead>
+                        <TableHead className="text-right">Avg Duration</TableHead>
+                        <TableHead className="text-center">Empties Collected</TableHead>
+                        <TableHead className="text-right">Amount Collected</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredEmployees.map((e) => (
+                        <TableRow key={e.id}>
+                          <TableCell className="font-mono text-xs font-semibold">{e.code}</TableCell>
+                          <TableCell>
+                            <p className="font-medium text-foreground">{e.name}</p>
+                            <p className="text-xs text-muted-foreground">{e.mobile}</p>
+                          </TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">{e.assigned}</TableCell>
+                          <TableCell className="text-right font-bold tabular-nums text-success-foreground">{e.delivered}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums text-destructive">{e.failed}</TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
+                            {formatDuration(e.avg_duration_seconds)}
+                          </TableCell>
+                          <TableCell className="text-center font-bold tabular-nums text-foreground">
+                            {e.empty_collected}
+                          </TableCell>
+                          <TableCell className="text-right font-bold tabular-nums text-primary">
+                            {fmtMoney(e.amount_collected)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: INVENTORY MOVEMENTS & STOCK DETAILED REPORT */}
+          {view === "inventory" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-80 pl-8"
+                  />
+                </div>
+                <Button variant="outline" onClick={exportInventoryExcel}>
+                  <Download className="mr-1.5 h-4 w-4" /> Export to Excel (.xlsx)
+                </Button>
+              </div>
+
+              <div className="rounded-2xl border bg-card shadow-soft overflow-x-auto">
+                {filteredInventory.length === 0 ? (
+                  <EmptyState title="No products found" description="Inventory products will appear here." />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product Name</TableHead>
+                        <TableHead>Kind</TableHead>
+                        <TableHead className="text-right">Opening</TableHead>
+                        <TableHead className="text-right">Added (+)</TableHead>
+                        <TableHead className="text-right">Empties (+)</TableHead>
+                        <TableHead className="text-right">Delivered (-)</TableHead>
+                        <TableHead className="text-right">Damaged (-)</TableHead>
+                        <TableHead className="text-right">Current Available</TableHead>
+                        <TableHead className="text-right">Min Alert</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInventory.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-semibold text-foreground">{p.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{PRODUCT_KIND_LABEL[p.kind] ?? p.kind}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">{p.opening} {p.unit}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums text-success-foreground">+{p.added}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums text-primary">+{p.returned}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums text-destructive">-{p.delivered}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums text-destructive">-{p.damaged}</TableCell>
+                          <TableCell className="text-right font-bold tabular-nums text-foreground">{p.current} {p.unit}</TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground tabular-nums">{p.min}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              p.low
+                                ? "bg-warning/15 text-warning-foreground"
+                                : "bg-success/15 text-success-foreground"
+                            }`}>
+                              {p.low ? "Low Stock" : "Healthy"}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </div>
+          )}
         </>
-      ) : null}
+      )}
     </div>
   );
 }

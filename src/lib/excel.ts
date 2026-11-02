@@ -44,12 +44,18 @@ export async function buildWorkbook(sheets: SheetSpec[]) {
   wb.created = new Date();
   for (const s of sheets) {
     const ws = wb.addWorksheet(safeSheetName(s.name), { views: [{ state: "frozen", ySplit: 1 }] });
-    ws.columns = s.columns.map((c) => ({
-      header: c.header,
-      key: c.key,
-      width: c.width ?? Math.min(48, Math.max(12, c.header.length + 4)),
-      style: FORMATS[c.type ?? "text"] ? { numFmt: FORMATS[c.type ?? "text"] } : {},
-    }));
+    ws.columns = s.columns.map((c) => {
+      const colDef: Record<string, unknown> = {
+        header: c.header,
+        key: c.key,
+        width: c.width ?? Math.min(48, Math.max(12, c.header.length + 4)),
+      };
+      const fmt = FORMATS[c.type ?? "text"];
+      if (fmt) {
+        colDef["style"] = { numFmt: fmt };
+      }
+      return colDef as any;
+    });
     for (const r of s.rows) {
       const row: Record<string, unknown> = {};
       for (const c of s.columns) row[c.key] = cellValue(r[c.key], c.type ?? "text");

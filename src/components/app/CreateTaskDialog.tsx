@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { activeCustomersQuery, activeEmployeesQuery, productsQuery } from "@/lib/queries";
-import { errorMessage } from "@/lib/format";
+import { errorMessage, fmtMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Line = { product_id: string; quantity: string };
+type Line = { customer_item_id: string; quantity: string };
 
 export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const qc = useQueryClient();
@@ -29,9 +29,24 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
   const [priority, setPriority] = useState("3");
   const [scheduled, setScheduled] = useState("");
   const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<Line[]>([{ product_id: "", quantity: "1" }]);
+  const [lines, setLines] = useState<Line[]>([{ customer_item_id: "", quantity: "1" }]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const customerItems = useQuery({
+    queryKey: ["customer_items", customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from("customer_items")
+        .select("*")
+        .eq("customer_id", customerId)
+        .order("item_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: open && !!customerId,
+  });
 
   useEffect(() => {
     if (open) {
@@ -40,37 +55,52 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
       setPriority("3");
       setScheduled("");
       setNotes("");
-      setLines([{ product_id: "", quantity: "1" }]);
+      setLines([{ customer_item_id: "", quantity: "1" }]);
     }
   }, [open]);
 
   useEffect(() => {
-    const first = deliverable.find((p) => p.kind === "FILLED_CAN") ?? deliverable[0];
-    if (open && lines.length === 1 && !lines[0]?.product_id && first) {
-      setLines([{ product_id: first.id, quantity: "1" }]);
+    if (customerItems.data && customerItems.data.length > 0) {
+      const firstId = customerItems.data[0]?.id;
+      setLines([{ customer_item_id: firstId ?? "", quantity: "1" }]);
+    } else if (customerId) {
+      setLines([{ customer_item_id: "", quantity: "1" }]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, deliverable.length]);
+  }, [customerId, customerItems.data]);
 
   const customer = customers.data?.find((c) => c.id === customerId);
+  const availableItems = customerItems.data ?? [];
 
   async function submit() {
     if (busy) return;
     if (!customerId) { toast.error("Choose a customer"); return; }
     if (!employeeId) { toast.error("Assign an employee"); return; }
-    const items = lines.filter((l) => l.product_id);
-    if (!items.length) { toast.error("Add at least one product"); return; }
-    if (new Set(items.map((i) => i.product_id)).size !== items.length) { toast.error("Each product can only be added once"); return; }
+    const items = lines.filter((l) => l.customer_item_id);
+    if (!items.length) { toast.error("Add at least one item"); return; }
+    if (new Set(items.map((i) => i.customer_item_id)).size !== items.length) {
+      toast.error("Each item can only be added once");
+      return;
+    }
     for (const i of items) {
       const n = Number(i.quantity);
-      if (!Number.isInteger(n) || n <= 0) { toast.error("Quantities must be positive whole numbers"); return; }
+      if (!Number.isInteger(n) || n <= 0) {
+        toast.error("Quantities must be positive whole numbers");
+        return;
+      }
     }
     setBusy(true);
     const { data, error } = await supabase.rpc("create_delivery_task", {
       _customer_id: customerId,
       _employee_id: employeeId,
       _priority: Number(priority),
-      _items: items.map((i) => ({ product_id: i.product_id, quantity: Number(i.quantity) })),
+      _items: items.map((i) => {
+        const ci = availableItems.find((c) => c.id === i.customer_item_id);
+        return {
+          customer_item_id: i.customer_item_id,
+          product_id: ci?.product_id,
+          quantity: Number(i.quantity),
+        };
+      }),
       ...(scheduled ? { _scheduled_date: scheduled } : {}),
       ...(notes.trim() ? { _notes: notes } : {}),
     });
@@ -156,38 +186,72 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
           </div>
 
           <div className="space-y-2">
-            <Label>Products</Label>
-            {products.data && deliverable.length === 0 && (
-              <p className="rounded-lg bg-warning/15 p-2 text-xs text-warning-foreground">Add products in Inventory first.</p>
+            <Label>Products / Items</Label>
+            {!customerId && (
+              <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">Select a customer above to view their configured pricing and items.</p>
             )}
-            {lines.map((l, idx) => (
-              <div key={idx} className="flex gap-2">
-                <Select value={l.product_id} onValueChange={(v) => setLines(lines.map((x, i) => (i === idx ? { ...x, product_id: v } : x)))}>
-                  <SelectTrigger className="flex-1"><SelectValue placeholder="Product" /></SelectTrigger>
-                  <SelectContent>
-                    {deliverable.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name} · {p.available_quantity} {p.unit} in stock</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  className="w-24"
-                  type="number"
-                  min={1}
-                  step={1}
-                  inputMode="numeric"
-                  value={l.quantity}
-                  onChange={(e) => setLines(lines.map((x, i) => (i === idx ? { ...x, quantity: e.target.value } : x)))}
-                />
-                <Button variant="ghost" size="icon" aria-label="Remove" disabled={lines.length === 1} onClick={() => setLines(lines.filter((_, i) => i !== idx))}>
-                  <Trash2 />
-                </Button>
+            {customerId && customerItems.isSuccess && availableItems.length === 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-warning/15 p-3 text-xs text-warning-foreground">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>This customer does not have any items in their price list. Add items in <strong>Customers → Edit Customer</strong> first.</span>
               </div>
-            ))}
-            {lines.length < deliverable.length && (
-              <Button variant="outline" size="sm" onClick={() => setLines([...lines, { product_id: "", quantity: "1" }])}>
-                <Plus /> Add product
-              </Button>
+            )}
+            {customerId && availableItems.length > 0 && (
+              <>
+                {lines.map((l, idx) => {
+                  const selectedCi = availableItems.find((c) => c.id === l.customer_item_id);
+                  const prod = deliverable.find((p) => p.id === selectedCi?.product_id);
+                  return (
+                    <div key={idx} className="flex gap-2">
+                      <Select
+                        value={l.customer_item_id}
+                        onValueChange={(v) => setLines(lines.map((x, i) => (i === idx ? { ...x, customer_item_id: v } : x)))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Choose item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableItems.map((ci) => {
+                            const p = deliverable.find((d) => d.id === ci.product_id);
+                            return (
+                              <SelectItem key={ci.id} value={ci.id}>
+                                {ci.item_name} ({ci.unit}) — {fmtMoney(ci.price)} {p ? `· ${p.available_quantity} in stock` : ""}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        className="w-24"
+                        type="number"
+                        min={1}
+                        step={1}
+                        inputMode="numeric"
+                        value={l.quantity}
+                        onChange={(e) => setLines(lines.map((x, i) => (i === idx ? { ...x, quantity: e.target.value } : x)))}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove"
+                        disabled={lines.length === 1}
+                        onClick={() => setLines(lines.filter((_, i) => i !== idx))}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  );
+                })}
+                {lines.length < availableItems.length && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLines([...lines, { customer_item_id: "", quantity: "1" }])}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Add item
+                  </Button>
+                )}
+              </>
             )}
           </div>
 
@@ -205,7 +269,9 @@ export function CreateTaskDialog({ open, onOpenChange }: { open: boolean; onOpen
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
-          <Button variant="water" onClick={submit} disabled={busy}>{busy && <Loader2 className="animate-spin" />} Create task</Button>
+          <Button variant="water" onClick={submit} disabled={busy || !customerId || availableItems.length === 0}>
+            {busy && <Loader2 className="animate-spin" />} Create task
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   ClipboardList,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -23,6 +24,7 @@ const NAV = [
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/employees", label: "Employees", icon: UserCog },
   { to: "/admin/tasks", label: "Tasks", icon: ClipboardList },
+  { to: "/admin/billing", label: "Billing & Ledger", icon: IndianRupee },
   { to: "/admin/tracking", label: "Delivery Tracking", icon: RouteIcon },
   { to: "/admin/inventory", label: "Inventory", icon: Package },
   { to: "/admin/reports", label: "Reports", icon: BarChart3 },

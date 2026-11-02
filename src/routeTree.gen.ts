@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminBillingRouteImport } from './routes/admin.billing'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -65,6 +66,11 @@ const SetupRoute = SetupRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBillingRoute = AdminBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminInventoryRoute = AdminInventoryRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/admin/billing': typeof AdminBillingRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/admin/billing': typeof AdminBillingRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
+  '/admin/billing': typeof AdminBillingRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
+    | '/admin/billing'
     | '/admin/inventory'
     | '/admin/reports'
     | '/admin/settings'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
+    | '/admin/billing'
     | '/admin/inventory'
     | '/admin/reports'
     | '/admin/settings'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/reset-password'
     | '/setup'
+    | '/admin/billing'
     | '/admin/inventory'
     | '/admin/reports'
     | '/admin/settings'
@@ -349,6 +361,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/billing': {
+      id: '/admin/billing'
+      path: '/billing'
+      fullPath: '/admin/billing'
+      preLoaderRoute: typeof AdminBillingRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/inventory': {
@@ -460,6 +479,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminBillingRoute: typeof AdminBillingRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -473,6 +493,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminBillingRoute: AdminBillingRoute,
   AdminInventoryRoute: AdminInventoryRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
