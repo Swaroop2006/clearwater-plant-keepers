@@ -20,32 +20,255 @@ export type Database = {
           default_priority: number
           id: number
           late_threshold_minutes: number
+          qr_image_path: string | null
           timezone: string
           updated_at: string
+          upi_id: string | null
         }
         Insert: {
           business_name?: string
           default_priority?: number
           id?: number
           late_threshold_minutes?: number
+          qr_image_path?: string | null
           timezone?: string
           updated_at?: string
+          upi_id?: string | null
         }
         Update: {
           business_name?: string
           default_priority?: number
           id?: number
           late_threshold_minutes?: number
+          qr_image_path?: string | null
           timezone?: string
           updated_at?: string
+          upi_id?: string | null
         }
         Relationships: []
+      }
+      bills: {
+        Row: {
+          bill_code: string
+          bill_date: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          task_id: string
+          total_amount: number
+        }
+        Insert: {
+          bill_code?: string
+          bill_date?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          task_id: string
+          total_amount: number
+        }
+        Update: {
+          bill_code?: string
+          bill_date?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          task_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bills_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "bills_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "bills_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
+            referencedRelation: "delivery_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_empty_can_txns: {
+        Row: {
+          created_at: string
+          customer_id: string
+          employee_id: string | null
+          id: string
+          new_balance: number
+          notes: string | null
+          performed_by: string | null
+          previous_balance: number
+          quantity: number
+          task_id: string | null
+          txn_code: string
+          txn_type: Database["public"]["Enums"]["empty_can_txn_type"]
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          employee_id?: string | null
+          id?: string
+          new_balance: number
+          notes?: string | null
+          performed_by?: string | null
+          previous_balance: number
+          quantity: number
+          task_id?: string | null
+          txn_code?: string
+          txn_type: Database["public"]["Enums"]["empty_can_txn_type"]
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          employee_id?: string | null
+          id?: string
+          new_balance?: number
+          notes?: string | null
+          performed_by?: string | null
+          previous_balance?: number
+          quantity?: number
+          task_id?: string | null
+          txn_code?: string
+          txn_type?: Database["public"]["Enums"]["empty_can_txn_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_empty_can_txns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_empty_can_txns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_empty_can_txns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_empty_can_txns_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_stats"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "customer_empty_can_txns_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_empty_can_txns_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_items: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          item_name: string
+          price: number
+          product_id: string
+          sort_order: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          item_name: string
+          price: number
+          product_id: string
+          sort_order?: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          item_name?: string
+          price?: number
+          product_id?: string
+          sort_order?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
           address: string
+          custom_type: string | null
           customer_code: string
           customer_type: Database["public"]["Enums"]["customer_type"]
+          empty_cans_balance: number
           id: string
           joined_at: string
           mobile: string
@@ -58,8 +281,10 @@ export type Database = {
         }
         Insert: {
           address: string
+          custom_type?: string | null
           customer_code?: string
           customer_type?: Database["public"]["Enums"]["customer_type"]
+          empty_cans_balance?: number
           id?: string
           joined_at?: string
           mobile: string
@@ -72,8 +297,10 @@ export type Database = {
         }
         Update: {
           address?: string
+          custom_type?: string | null
           customer_code?: string
           customer_type?: Database["public"]["Enums"]["customer_type"]
+          empty_cans_balance?: number
           id?: string
           joined_at?: string
           mobile?: string
@@ -88,8 +315,10 @@ export type Database = {
       }
       delivery_items: {
         Row: {
+          customer_item_id: string | null
           delivered_qty: number | null
           id: string
+          line_total: number | null
           product_id: string
           product_kind: Database["public"]["Enums"]["product_kind"]
           product_name: string
@@ -99,8 +328,10 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          customer_item_id?: string | null
           delivered_qty?: number | null
           id?: string
+          line_total?: number | null
           product_id: string
           product_kind: Database["public"]["Enums"]["product_kind"]
           product_name: string
@@ -110,8 +341,10 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          customer_item_id?: string | null
           delivered_qty?: number | null
           id?: string
+          line_total?: number | null
           product_id?: string
           product_kind?: Database["public"]["Enums"]["product_kind"]
           product_name?: string
@@ -121,6 +354,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "delivery_items_customer_item_id_fkey"
+            columns: ["customer_item_id"]
+            isOneToOne: false
+            referencedRelation: "customer_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "delivery_items_product_id_fkey"
             columns: ["product_id"]
@@ -249,6 +489,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "delivery_tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
           {
             foreignKeyName: "delivery_tasks_customer_id_fkey"
             columns: ["customer_id"]
@@ -423,6 +670,167 @@ export type Database = {
           },
         ]
       }
+      payment_allocations: {
+        Row: {
+          amount: number
+          bill_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          payment_id: string
+        }
+        Insert: {
+          amount: number
+          bill_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bill_balances"
+            referencedColumns: ["bill_id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_balances"
+            referencedColumns: ["payment_id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          collected_by: string | null
+          created_at: string
+          customer_id: string
+          employee_id: string | null
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          paid_at: string
+          payment_code: string
+          reference_no: string | null
+          reverses_payment_id: string | null
+          task_id: string | null
+        }
+        Insert: {
+          amount: number
+          collected_by?: string | null
+          created_at?: string
+          customer_id: string
+          employee_id?: string | null
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_at?: string
+          payment_code?: string
+          reference_no?: string | null
+          reverses_payment_id?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          amount?: number
+          collected_by?: string | null
+          created_at?: string
+          customer_id?: string
+          employee_id?: string | null
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_at?: string
+          payment_code?: string
+          reference_no?: string | null
+          reverses_payment_id?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_stats"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "payments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_reverses_payment_id_fkey"
+            columns: ["reverses_payment_id"]
+            isOneToOne: true
+            referencedRelation: "payment_balances"
+            referencedColumns: ["payment_id"]
+          },
+          {
+            foreignKeyName: "payments_reverses_payment_id_fkey"
+            columns: ["reverses_payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           available_quantity: number
@@ -485,6 +893,67 @@ export type Database = {
       }
     }
     Views: {
+      bill_balances: {
+        Row: {
+          amount_paid: number | null
+          bill_code: string | null
+          bill_date: string | null
+          bill_id: string | null
+          customer_id: string | null
+          outstanding: number | null
+          payment_status: string | null
+          task_id: string | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bills_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "bills_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "bills_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
+            referencedRelation: "delivery_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_balances: {
+        Row: {
+          bill_count: number | null
+          customer_id: string | null
+          empty_cans_balance: number | null
+          empty_collected: number | null
+          empty_issued: number | null
+          last_payment_at: string | null
+          outstanding: number | null
+          partial_bills: number | null
+          total_allocated: number | null
+          total_billed: number | null
+          total_received: number | null
+          unapplied_credit: number | null
+          unpaid_bills: number | null
+        }
+        Relationships: []
+      }
       customer_stats: {
         Row: {
           customer_id: string | null
@@ -509,10 +978,79 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_balances: {
+        Row: {
+          allocated: number | null
+          amount: number | null
+          customer_id: string | null
+          is_reversed: boolean | null
+          method: Database["public"]["Enums"]["payment_method"] | null
+          paid_at: string | null
+          payment_code: string | null
+          payment_id: string | null
+          reverses_payment_id: string | null
+          task_id: string | null
+          unapplied: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_balances"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_stats"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_reverses_payment_id_fkey"
+            columns: ["reverses_payment_id"]
+            isOneToOne: true
+            referencedRelation: "payment_balances"
+            referencedColumns: ["payment_id"]
+          },
+          {
+            foreignKeyName: "payments_reverses_payment_id_fkey"
+            columns: ["reverses_payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_dashboard: { Args: never; Returns: Json }
       admin_exists: { Args: never; Returns: boolean }
+      allocate_oldest_first: {
+        Args: {
+          _amount: number
+          _customer_id: string
+          _exclude_bill?: string
+          _payment_id: string
+        }
+        Returns: number
+      }
+      apply_customer_credit: { Args: { _customer_id: string }; Returns: number }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       business_tz: { Args: never; Returns: string }
       cancel_delivery_task: {
@@ -553,6 +1091,7 @@ export type Database = {
           _empty_cans_returned?: number
           _items: Json
           _notes?: string
+          _payment?: Json
           _task_id: string
         }
         Returns: {
@@ -654,7 +1193,29 @@ export type Database = {
         }
       }
       current_employee_id: { Args: never; Returns: string }
+      customer_report: {
+        Args: { _customer_id?: string; _from: string; _to: string }
+        Returns: Json
+      }
+      delivery_billing_context: { Args: { _task_id: string }; Returns: Json }
+      delivery_history_rows: {
+        Args: {
+          _customer_id?: string
+          _employee_id?: string
+          _from: string
+          _to: string
+        }
+        Returns: Json
+      }
       delivery_report: { Args: { _from: string; _to: string }; Returns: Json }
+      employee_report: {
+        Args: { _employee_id?: string; _from: string; _to: string }
+        Returns: Json
+      }
+      empty_can_history_rows: {
+        Args: { _customer_id?: string; _from: string; _to: string }
+        Returns: Json
+      }
       fail_delivery: {
         Args: { _reason: string; _task_id: string }
         Returns: {
@@ -728,6 +1289,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      inventory_report: {
+        Args: { _from: string; _product_id?: string; _to: string }
+        Returns: Json
+      }
       log_task: {
         Args: {
           _from: Database["public"]["Enums"]["task_status"]
@@ -739,6 +1304,10 @@ export type Database = {
       }
       my_next_task_id: { Args: never; Returns: string }
       next_eligible_task_id: { Args: { _employee: string }; Returns: string }
+      payment_history_rows: {
+        Args: { _customer_id?: string; _from: string; _to: string }
+        Returns: Json
+      }
       reassign_delivery_task: {
         Args: { _employee_id: string; _priority?: number; _task_id: string }
         Returns: {
@@ -768,6 +1337,67 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_customer_payment: {
+        Args: {
+          _amount: number
+          _bill_id?: string
+          _customer_id: string
+          _method: Database["public"]["Enums"]["payment_method"]
+          _mode: string
+          _notes?: string
+          _paid_at?: string
+          _reference?: string
+        }
+        Returns: {
+          amount: number
+          collected_by: string | null
+          created_at: string
+          customer_id: string
+          employee_id: string | null
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          paid_at: string
+          payment_code: string
+          reference_no: string | null
+          reverses_payment_id: string | null
+          task_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_empty_can_movement: {
+        Args: {
+          _customer_id: string
+          _notes?: string
+          _quantity: number
+          _type: Database["public"]["Enums"]["empty_can_txn_type"]
+        }
+        Returns: {
+          created_at: string
+          customer_id: string
+          employee_id: string | null
+          id: string
+          new_balance: number
+          notes: string | null
+          performed_by: string | null
+          previous_balance: number
+          quantity: number
+          task_id: string | null
+          txn_code: string
+          txn_type: Database["public"]["Enums"]["empty_can_txn_type"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_empty_can_txns"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -829,6 +1459,60 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "delivery_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reverse_payment: {
+        Args: { _payment_id: string; _reason: string }
+        Returns: {
+          amount: number
+          collected_by: string | null
+          created_at: string
+          customer_id: string
+          employee_id: string | null
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          paid_at: string
+          payment_code: string
+          reference_no: string | null
+          reverses_payment_id: string | null
+          task_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_customer: {
+        Args: {
+          _customer: Json
+          _customer_id: string
+          _empty?: Json
+          _items: Json
+        }
+        Returns: {
+          address: string
+          custom_type: string | null
+          customer_code: string
+          customer_type: Database["public"]["Enums"]["customer_type"]
+          empty_cans_balance: number
+          id: string
+          joined_at: string
+          mobile: string
+          name: string
+          notes: string | null
+          price_per_can: number
+          price_per_packet: number
+          status: Database["public"]["Enums"]["record_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customers"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -902,7 +1586,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "employee"
-      customer_type: "HOME" | "SHOP" | "OFFICE"
+      customer_type: "HOME" | "SHOP" | "OFFICE" | "CUSTOM"
+      empty_can_txn_type:
+        | "OPENING_BALANCE"
+        | "EMPTY_CANS_COLLECTED"
+        | "EMPTY_CANS_ISSUED"
+        | "BALANCE_ADJUSTMENT"
+      payment_method: "CASH" | "UPI" | "BANK_TRANSFER" | "OTHER"
       product_kind: "FILLED_CAN" | "PACKET" | "EMPTY_CAN" | "OTHER"
       record_status: "ACTIVE" | "INACTIVE"
       task_status:
@@ -1048,7 +1738,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "employee"],
-      customer_type: ["HOME", "SHOP", "OFFICE"],
+      customer_type: ["HOME", "SHOP", "OFFICE", "CUSTOM"],
+      empty_can_txn_type: [
+        "OPENING_BALANCE",
+        "EMPTY_CANS_COLLECTED",
+        "EMPTY_CANS_ISSUED",
+        "BALANCE_ADJUSTMENT",
+      ],
+      payment_method: ["CASH", "UPI", "BANK_TRANSFER", "OTHER"],
       product_kind: ["FILLED_CAN", "PACKET", "EMPTY_CAN", "OTHER"],
       record_status: ["ACTIVE", "INACTIVE"],
       task_status: [

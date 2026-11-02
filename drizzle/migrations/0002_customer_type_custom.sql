@@ -1,0 +1,1 @@
+alter type public.customer_type add value if not exists 'CUSTOM';
