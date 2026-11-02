@@ -210,7 +210,7 @@ function ResetPasswordDialog({ employeeId }: { employeeId: string }) {
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit() {
-    if (pw.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (pw.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     setBusy(true);
     try {
       await reset({ data: { employeeId, password: pw } });
